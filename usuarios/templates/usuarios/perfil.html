@@ -1,0 +1,188 @@
+{% load static %}
+<!DOCTYPE html>
+<html class="light" lang="es">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Mi Perfil - Plataforma de Comerciantes</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+    
+    <script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              colors: {
+                "primary": "#005A9C",
+                "secondary": "#FF9800",
+                "background-light": "#F4F6F8",
+                "background-dark": "#101c22",
+                "text-light": "#333333",
+                "text-dark": "#F4F6F8",
+                "text-muted-light": "#666666",
+                "text-muted-dark": "#a0aec0",
+              },
+              fontFamily: {
+                "display": ["Work Sans", "sans-serif"],
+              },
+              borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+            },
+          },
+        }
+    </script>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display">
+    <div class="relative flex h-auto min-h-screen w-full flex-col group/design-root overflow-x-hidden">
+        <div class="layout-container flex h-full grow flex-col">
+            <header class="flex items-center justify-between whitespace-nowrap bg-white dark:bg-background-dark border-b border-solid border-gray-200 dark:border-gray-700 px-10 py-3 shadow-sm sticky top-0 z-50">
+                <div class="flex items-center gap-8">
+                    <div class="flex items-center gap-3">
+                        <img src="{% static 'img/logoClubAlmacen.png' %}" alt="Logo de la Plataforma" class="h-24 w-auto"/>
+                    </div>
+                    <nav class="hidden md:flex gap-6 text-text-muted-light dark:text-text-muted-dark font-semibold text-sm">
+                        <a href="{% url 'plataforma_comerciante' %}" class="hover:text-primary transition-colors">Plataforma</a>
+                        <a href="#" class="hover:text-primary transition-colors">Directorio</a>
+                        <a href="#" class="hover:text-primary transition-colors">Recursos</a>
+                        <a href="#" class="hover:text-primary transition-colors">Comunidad</a>
+                    </nav>
+                </div>
+                <div class="flex justify-end gap-4 items-center">
+                    <button class="flex max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 w-10 bg-transparent text-text-muted-light dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-gray-700">
+                        <span class="material-symbols-outlined text-2xl">notifications</span>
+                    </button>
+                    <div class="flex items-center gap-2 p-1 rounded-lg bg-gray-100 dark:bg-gray-700">
+                        <div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10" 
+                             data-alt="Foto de {{ comerciante.nombre_apellido }}" 
+                             style='background-image: url("http://googleusercontent.com/profile/picture/user_placeholder");'>
+                        </div>
+                        
+                        <div class="flex flex-col text-left hidden sm:block pr-2">
+                            <p class="text-text-light dark:text-text-dark text-sm font-semibold leading-none">{{ comerciante.nombre_apellido|truncatewords:2 }}</p>
+                            <p class="text-text-muted-light dark:text-text-muted-dark text-xs leading-none mt-1">{{ rol_usuario }}</p>
+                        </div>
+                    </div>
+                </div>
+            </header>
+            
+            <main class="flex-1 w-full max-w-screen-xl mx-auto p-6 lg:p-8">
+                <h1 class="text-3xl font-bold text-text-light dark:text-text-dark mb-6">Mi Perfil</h1>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    
+                    <div class="lg:col-span-1 space-y-8">
+                        <div class="bg-white dark:bg-white p-6 rounded-xl shadow-sm">
+                            <div class="flex flex-col items-center mb-6">
+                                <div class="relative">
+                                    <div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-24" 
+                                         style='background-image: url("http://googleusercontent.com/profile/picture/user_placeholder");'>
+                                    </div>
+                                    <button class="absolute bottom-0 right-0 p-1 bg-primary text-white rounded-full border-2 border-white dark:border-background-dark hover:bg-primary/90">
+                                        <span class="material-symbols-outlined text-base">edit</span>
+                                    </button>
+                                </div>
+                                <h2 class="text-xl font-bold text-text-light dark:text-text-dark mt-4">{{ comerciante.nombre_apellido }}</h2>
+                                <p class="text-text-muted-light dark:text-text-muted-dark text-sm mt-1">
+                                    {{ comerciante.get_relacion_negocio_display }} de {{ comerciante.get_tipo_negocio_display }} 'Minimarket El Sol' <br> (Simulación de nombre de negocio)
+                                </p>
+                            </div>
+                            
+                            <div class="space-y-4">
+                                <div class="border-t pt-4">
+                                    <div class="flex justify-between items-center mb-4">
+                                        <h3 class="text-lg font-bold text-text-light dark:text-text-dark">Datos Personales</h3>
+                                        <button class="flex items-center gap-1 text-primary text-sm font-semibold hover:underline">
+                                            <span class="material-symbols-outlined text-base">edit</span>
+                                            Editar
+                                        </button>
+                                    </div>
+                                    <p class="text-sm font-medium text-text-muted-light">Correo:</p>
+                                    <p class="text-base text-text-light dark:text-text-dark mb-2">{{ comerciante.email }}</p>
+                                    <p class="text-sm font-medium text-text-muted-light">WhatsApp:</p>
+                                    <p class="text-base text-text-light dark:text-text-dark">{{ comerciante.whatsapp }}</p>
+                                </div>
+
+                                <div class="border-t pt-4">
+                                    <div class="flex justify-between items-center mb-4">
+                                        <h3 class="text-lg font-bold text-text-light dark:text-text-dark">Datos del Negocio</h3>
+                                        <button class="flex items-center gap-1 text-primary text-sm font-semibold hover:underline">
+                                            <span class="material-symbols-outlined text-base">edit</span>
+                                            Editar
+                                        </button>
+                                    </div>
+                                    <p class="text-sm font-medium text-text-muted-light">Relación:</p>
+                                    <p class="text-base text-text-light dark:text-text-dark mb-2">{{ comerciante.get_relacion_negocio_display }}</p>
+                                    <p class="text-sm font-medium text-text-muted-light">Tipo:</p>
+                                    <p class="text-base text-text-light dark:text-text-dark mb-2">{{ comerciante.get_tipo_negocio_display }}</p>
+                                    <p class="text-sm font-medium text-text-muted-light">Comuna:</p>
+                                    <p class="text-base text-text-light dark:text-text-dark">{{ comerciante.comuna }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="lg:col-span-2 space-y-8">
+                        
+                        <div class="bg-white dark:bg-white p-6 rounded-xl shadow-sm">
+                            <div class="flex justify-between items-center mb-4">
+                                <h3 class="text-lg font-bold text-text-light dark:text-text-dark">Mis Intereses</h3>
+                                <button class="flex items-center gap-1 text-primary text-sm font-semibold hover:underline">
+                                    <span class="material-symbols-outlined text-base">edit</span>
+                                    Editar Intereses
+                                </button>
+                            </div>
+                            <div class="flex flex-wrap gap-2">
+                                {% for interes in intereses %}
+                                    <span class="px-3 py-1 bg-primary/10 text-primary text-sm font-medium rounded-full">{{ interes }}</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <div class="bg-white dark:bg-white p-6 rounded-xl shadow-sm">
+                            <h3 class="text-lg font-bold text-text-light dark:text-text-dark mb-4">Configuración</h3>
+                            <div class="space-y-4">
+                                <div class="flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-700">
+                                    <div>
+                                        <p class="text-base font-semibold text-text-light dark:text-text-dark">Notificaciones por Correo</p>
+                                        <p class="text-sm text-text-muted-light dark:text-text-muted-dark">Recibir noticias y actualizaciones de la plataforma.</p>
+                                    </div>
+                                    <label class="relative inline-flex items-center cursor-pointer">
+                                        <input type="checkbox" value="" class="sr-only peer" checked>
+                                        <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/50 dark:peer-focus:ring-primary rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
+                                    </label>
+                                </div>
+
+                                <div class="flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-700">
+                                    <div>
+                                        <p class="text-base font-semibold text-text-light dark:text-text-dark">Notificaciones en la Plataforma</p>
+                                        <p class="text-sm text-text-muted-light dark:text-text-muted-dark">Mostrar alertas sobre nuevos recursos y mensajes.</p>
+                                    </div>
+                                    <label class="relative inline-flex items-center cursor-pointer">
+                                        <input type="checkbox" value="" class="sr-only peer" checked>
+                                        <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/50 dark:peer-focus:ring-primary rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
+                                    </label>
+                                </div>
+
+                                <div class="flex justify-between items-center py-2">
+                                    <div>
+                                        <p class="text-base font-semibold text-text-light dark:text-text-dark">Perfil Público</p>
+                                        <p class="text-sm text-text-muted-light dark:text-text-muted-dark">Permitir que otros comerciantes te encuentren en el directorio.</p>
+                                    </div>
+                                    <label class="relative inline-flex items-center cursor-pointer">
+                                        <input type="checkbox" value="" class="sr-only peer">
+                                        <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/50 dark:peer-focus:ring-primary rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
+                                    </label>
+                                </div>
+
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+</body>
+</html>

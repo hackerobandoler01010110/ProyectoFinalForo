@@ -12,4 +12,6 @@ urlpatterns = [
     
     # NUEVA URL para crear publicaciones
     path('publicar/', views.crear_publicacion_view, name='crear_publicacion'),
+
+    path('perfil/', views.perfil_view, name='perfil'),
 ]

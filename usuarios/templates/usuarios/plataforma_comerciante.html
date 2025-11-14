@@ -67,10 +67,18 @@
                     <button class="flex max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 w-10 bg-transparent text-text-muted-light dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-gray-700">
                         <span class="material-symbols-outlined text-2xl">notifications</span>
                     </button>
-                    <button class="flex max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 w-10 bg-transparent text-text-muted-light dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-gray-700">
-                        <span class="material-symbols-outlined text-2xl">settings</span>
-                    </button>
-                    <div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10" data-alt="User profile picture" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDHvwpnyqsHNE26vkYQRDmOsew1FmzE3huwOaXD81x6WwS7HFCzXdHlZUvxWPCLNDmbF_WpXbtsYq3_IhaPtE2CX7wkVRRZ-VeelbmqdGL2EBD3TKyZh52brWhNx8fpI8AUeqVTjCvLo2B2fhwjfL5C8GcEM7SS0_dEc_6Fp-Yhs0vZ5qfHKjCBte92VGlDQ9-2Hby5UgjwJ_1vulv4AOkL4JrTAYhgnVkJfISkGR40K2CPcLxNYRM0SSdi7tcnRjjjq-oGW3MyzQ");'></div>
+                    
+                    <a href="{% url 'perfil' %}" class="flex items-center gap-2 p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                        <div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10" 
+                            data-alt="Foto de {{ comerciante.nombre_apellido }}" 
+                            style='background-image: url("http://googleusercontent.com/profile/picture/user_placeholder");'>
+                        </div>
+                        
+                        <div class="flex flex-col text-left hidden sm:block">
+                            <p class="text-text-light dark:text-text-dark text-sm font-semibold leading-none">{{ comerciante.nombre_apellido|truncatewords:2 }}</p>
+                            <p class="text-text-muted-light dark:text-text-muted-dark text-xs leading-none mt-1">{{ rol_usuario }}</p>
+                        </div>
+                    </a>
                 </div>
             </header>
             
