@@ -1,80 +1,65 @@
+# usuarios/views.py
+
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.db import IntegrityError 
 from django.contrib.auth.hashers import make_password, check_password
-# Importación Corregida: Importa CATEGORIA_POST_CHOICES junto a Comerciante y Post
+# Importar CATEGORIA_POST_CHOICES, Comerciante y Post
 from .models import Comerciante, Post, CATEGORIA_POST_CHOICES 
 from .forms import RegistroComercianteForm, LoginForm, PostForm 
 from django.utils import timezone
-# Asumiendo que has definido RegistroComercianteForm y Comerciante en los archivos correspondientes
-from .forms import RegistroComercianteForm 
-# No necesitamos importar Comerciante directamente si solo usamos form.save()
+# Necesario para guardar archivos en el sistema MEDIA_ROOT
+from django.core.files.storage import default_storage 
+
 
 def registro_comerciante_view(request):
     """
     Vista para manejar el registro de nuevos comerciantes.
-    Maneja tanto la carga inicial de la página (GET) como el envío del formulario (POST).
     """
     if request.method == 'POST':
-        # 1. Cuando el usuario envía el formulario (POST)
         form = RegistroComercianteForm(request.POST)
         if form.is_valid():
             
             # --- Lógica de Guardado ---
-            # 2. Obtener y hashear la contraseña
             raw_password = form.cleaned_data.pop('password')
             hashed_password = make_password(raw_password)
 
-            # 3. Crear el nuevo objeto Comerciante en memoria (sin guardar en DB aún)
             nuevo_comerciante = form.save(commit=False)
-            
-            # 4. Asignar el hash de la contraseña al campo del modelo
             nuevo_comerciante.password_hash = hashed_password
             
-            # 5. La comuna ya se movió de 'comuna_select' a 'comuna' en forms.py
-            # Solo verificamos que tenga un valor antes de guardar
             comuna_final = form.cleaned_data.get('comuna') 
             if comuna_final:
                 nuevo_comerciante.comuna = comuna_final
             
-            # 6. GUARDAR EL OBJETO COMPLETO EN LA BASE DE DATOS
             try:
                 nuevo_comerciante.save()
                 messages.success(request, '¡Registro exitoso! Ya puedes iniciar sesión.')
-                # Redirección a la página de login
                 return redirect('login') 
             
-            # MANEJO ESPECÍFICO DEL ERROR DE EMAIL DUPLICADO (IntegrityError)
             except IntegrityError:
-                # Si el email ya existe ( UNIQUE constraint en el campo email )
                 messages.error(request, 'Este correo electrónico ya está registrado. Por favor, inicia sesión o usa otro correo.')
                 print("ERROR DE DB: Intento de registro con email duplicado.")
             
             except Exception as e:
-                # Esto atrapará cualquier otro error de DB o sistema
                 messages.error(request, f'Ocurrió un error inesperado al guardar: {e}')
                 print(f"ERROR DE DB GENERAL: {e}") 
                 
         else:
-            # Si la validación de forms.py falla (ej: contraseñas no coinciden, campos vacíos)
             messages.error(request, 'Por favor, corrige los errores del formulario.')
             
     else:
-        # 7. Cuando la página se carga por primera vez (GET)
         form = RegistroComercianteForm()
     
-    # Renderiza la plantilla, pasando el formulario (vacío en GET, con errores en POST fallido)
     context = {
         'form': form
     }
     return render(request, 'usuarios/cuenta.html', context)
 
+
 # -------------------------------------------------------------------------------------
-# VISTA DE LOGIN
 def login_view(request):
     """
     Vista para manejar el inicio de sesión de comerciantes registrados.
-    Solo permite el acceso si el email existe en la base de datos y la contraseña es válida.
     """
     if request.method == 'POST':
         form = LoginForm(request.POST)
@@ -83,17 +68,14 @@ def login_view(request):
             password = form.cleaned_data['password']
 
             try:
-                # Buscar comerciante por email
                 comerciante = Comerciante.objects.get(email=email)
 
-                # Verificar contraseña
                 if check_password(password, comerciante.password_hash):
-                    # Actualizar última conexión
                     comerciante.ultima_conexion = timezone.now()
                     comerciante.save(update_fields=['ultima_conexion'])
 
                     messages.success(request, f'¡Bienvenido {comerciante.nombre_apellido}!')
-                    return redirect('plataforma_comerciante')  # Asegúrate que esta URL esté definida
+                    return redirect('plataforma_comerciante')
 
                 else:
                     messages.error(request, 'Contraseña incorrecta. Intenta nuevamente.')
@@ -113,56 +95,69 @@ def login_view(request):
     return render(request, 'usuarios/cuenta.html', context)
 
 # -------------------------------------------------------------------------------------
-# VISTA PARA CREAR PUBLICACIONES (NUEVA FUNCIÓN)
 def crear_publicacion_view(request):
-    # En una aplicación real, usarías @login_required y request.user.comerciante
+    """
+    Vista para crear publicaciones en el foro, manejando la subida de archivos.
+    """
     if request.method == 'POST':
         try:
             # Placeholder: Obtener el primer comerciante disponible (simulación de usuario logueado)
             comerciante_simulado = Comerciante.objects.first() 
             if not comerciante_simulado:
-                 messages.error(request, 'Error: No hay usuarios registrados.')
-                 return redirect('registro') 
+                messages.error(request, 'Error: No hay usuarios registrados.')
+                return redirect('registro') 
             
-            form = PostForm(request.POST)
+            # Pasar request.FILES para manejar la subida de archivos
+            form = PostForm(request.POST, request.FILES) 
+            
             if form.is_valid():
                 nuevo_post = form.save(commit=False)
-                nuevo_post.comerciante = comerciante_simulado # Asigna el comerciante
+                nuevo_post.comerciante = comerciante_simulado 
                 
-                # Los campos adicionales (imagen_url y etiquetas) ya se prepararon en form.clean()
+                # --- Manejo de Archivos Subidos ---
+                uploaded_file = form.cleaned_data.get('uploaded_file')
+                
+                if uploaded_file:
+                    # Guardar el archivo en el sistema MEDIA_ROOT/posts/
+                    file_name = default_storage.save(f'posts/{uploaded_file.name}', uploaded_file)
+                    # Almacenar la URL pública del archivo en imagen_url
+                    nuevo_post.imagen_url = default_storage.url(file_name) 
+                
+                # Si no se subió archivo, 'imagen_url' contendrá el link de 'url_link' (si se proporcionó)
                 
                 nuevo_post.save()
                 messages.success(request, '¡Publicación creada con éxito! Se ha añadido al foro.')
                 return redirect('plataforma_comerciante')
             else:
-                # Si la validación falla (ej. campos requeridos vacíos)
-                messages.error(request, 'Por favor, corrige los errores en el formulario de publicación.')
-                # Se redirige con el error, pero el formulario se perderá.
-                return redirect('plataforma_comerciante') # Redirigir a la plataforma
+                # Si el formulario no es válido (ej: error de validación del formulario)
+                # form.errors contiene los detalles del error
+                messages.error(request, f'Error al publicar. Por favor, corrige los errores: {form.errors.as_text()}')
+                return redirect('plataforma_comerciante') 
         
         except Exception as e:
             messages.error(request, f'Ocurrió un error al publicar: {e}')
             print(f"ERROR AL CREAR POST: {e}")
             
-    # Si se accede por GET, simplemente redirige a la plataforma
     return redirect('plataforma_comerciante')
 
 
-# VISTA PRINCIPAL DE LA PLATAFORMA DE COMERCIANTE (Modificada)
+# -------------------------------------------------------------------------------------
 def plataforma_comerciante_view(request):
     """
-    Vista para la plataforma del comerciante, que ahora maneja el filtro de foro.
+    Vista principal de la plataforma, que maneja el filtro de selección múltiple.
     """
     
-    # 1. Manejo del Filtro de Categoría
-    categoria_filtro = request.GET.get('categoria', None)
+    # 1. Manejo del Filtro de Categoría (Usa getlist para múltiples valores)
+    categoria_filtros = request.GET.getlist('categoria', [])
     
-    if categoria_filtro and categoria_filtro != 'TODAS':
-        # Filtra por la clave corta (ej: 'DUDA')
-        posts = Post.objects.filter(categoria=categoria_filtro)
+    if categoria_filtros and 'TODAS' not in categoria_filtros:
+        # Filtra por CUALQUIERA de las categorías seleccionadas
+        posts = Post.objects.filter(categoria__in=categoria_filtros)
     else:
-        posts = Post.objects.all() # Todos los posts por defecto
-        categoria_filtro = 'TODAS'
+        posts = Post.objects.all()
+        # Si no hay filtros o está marcado 'TODAS', ajustamos la lista para marcar el checkbox
+        if not categoria_filtros or 'TODAS' in categoria_filtros:
+            categoria_filtros = ['TODAS']
         
     # 2. Obtener el formulario de publicación vacío para el modal
     post_form = PostForm()
@@ -171,9 +166,8 @@ def plataforma_comerciante_view(request):
     context = {
         'post_form': post_form,
         'posts': posts,
-        # MODIFICACIÓN CLAVE: Usar la variable importada directamente, no a través de Post
         'CATEGORIA_POST_CHOICES': CATEGORIA_POST_CHOICES, 
-        'categoria_seleccionada': categoria_filtro,
+        'categoria_seleccionada': categoria_filtros, 
         'message': 'Bienvenido a la plataforma del comerciante.'
     }
     

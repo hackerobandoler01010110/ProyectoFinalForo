@@ -77,17 +77,27 @@ class LoginForm(forms.Form):
 
 # -------------------------------------------------------------------------------------
 class PostForm(forms.ModelForm):
-    # Campo personalizado para la URL/Link
-    imagen_o_link = forms.URLField(
+    # Campo para subida de archivo desde PC (NUEVA FUNCIONALIDAD)
+    uploaded_file = forms.FileField(
         required=False,
-        label='URL de Imagen o Link',
+        label='Subir Archivo (Imagen/Documento)',
+        widget=forms.ClearableFileInput(attrs={
+            # Estilos de Tailwind para el campo de archivo
+            'class': 'form-input-file block w-full text-sm text-text-light file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20 dark:file:bg-primary dark:file:text-white',
+        })
+    )
+
+    # Campo para link/URL externo (NUEVA FUNCIONALIDAD)
+    url_link = forms.URLField(
+        required=False,
+        label='Link URL',
         widget=forms.URLInput(attrs={
-            'placeholder': 'Opcional: URL de una imagen o link relevante',
+            'placeholder': 'Opcional: URL de una imagen externa o link',
             'class': 'form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-text-light dark:text-text-dark focus:outline-0 focus:ring-2 focus:ring-primary border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 focus:border-primary h-12 placeholder:text-text-muted-light dark:placeholder:text-text-muted-dark p-[10px] text-base font-normal leading-normal'
         })
     )
     
-    # Campo para etiquetas
+    # Campo para etiquetas (se mantiene)
     etiquetas_input = forms.CharField(
         required=False,
         label='Etiquetas',
@@ -100,11 +110,11 @@ class PostForm(forms.ModelForm):
 
     class Meta:
         model = Post
-        fields = ('titulo', 'contenido', 'categoria') # Usaremos los campos personalizados en clean()
+        fields = ('titulo', 'contenido', 'categoria') 
         
         widgets = {
             'titulo': forms.TextInput(attrs={
-                'placeholder': 'Un título claro y conciso',
+                'placeholder': 'Titulo',
                 'class': 'form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-text-light dark:text-text-dark focus:outline-0 focus:ring-2 focus:ring-primary border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 focus:border-primary h-12 placeholder:text-text-muted-light dark:placeholder:text-text-muted-dark p-[10px] text-base font-normal leading-normal'
             }),
             'contenido': forms.Textarea(attrs={
@@ -117,93 +127,25 @@ class PostForm(forms.ModelForm):
             }, choices=CATEGORIA_POST_CHOICES),
         }
 
-    # Asigna los campos personalizados a los campos del modelo antes de guardar
     def clean(self):
         cleaned_data = super().clean()
         
-        # Obtenemos los campos personalizados usando .pop() para eliminarlos de cleaned_data
-        imagen_o_link = self.cleaned_data.pop('imagen_o_link', None)
+        url_link = self.cleaned_data.get('url_link')
+        uploaded_file = self.cleaned_data.get('uploaded_file') # Obtenido del formulario
         etiquetas_input = self.cleaned_data.pop('etiquetas_input', None)
 
-        if imagen_o_link:
-            cleaned_data['imagen_url'] = imagen_o_link
+        # Validación: No permitir link y archivo al mismo tiempo
+        if uploaded_file and url_link:
+            self.add_error(None, "Solo puedes subir un archivo O proporcionar un link URL, no ambos.")
+            
+        # Si se proporciona un link, lo asignamos al campo que será guardado en la DB
+        if url_link:
+            cleaned_data['imagen_url'] = url_link
         
         if etiquetas_input:
             cleaned_data['etiquetas'] = etiquetas_input
 
+        # Si se sube un archivo, el campo 'uploaded_file' contendrá el objeto File.
+        # La vista (views.py) es la que se encarga de guardar este archivo y actualizar 'imagen_url'.
+        
         return cleaned_data
-
-from django.shortcuts import render, redirect
-from django.contrib import messages
-from django.db import IntegrityError
-from django.contrib.auth.hashers import make_password, check_password
-from .models import Comerciante, Post # <-- Importar Post
-from .forms import RegistroComercianteForm, LoginForm, PostForm # <-- Importar PostForm
-from django.utils import timezone
-
-# ... (registro_comerciante_view y login_view se mantienen) ...
-
-# NUEVA VISTA PARA CREAR PUBLICACIONES (solo procesa el POST)
-def crear_publicacion_view(request):
-    # En una aplicación real, usarías @login_required y request.user.comerciante
-    if request.method == 'POST':
-        try:
-            # Placeholder: Obtener el primer comerciante disponible (simulación de usuario logueado)
-            comerciante_simulado = Comerciante.objects.first() 
-            if not comerciante_simulado:
-                messages.error(request, 'Error: No hay usuarios registrados.')
-                return redirect('registro') 
-            
-            form = PostForm(request.POST)
-            if form.is_valid():
-                nuevo_post = form.save(commit=False)
-                nuevo_post.comerciante = comerciante_simulado # Asigna el comerciante
-                
-                # Los campos adicionales (imagen_url y etiquetas) ya se prepararon en form.clean()
-                
-                nuevo_post.save()
-                messages.success(request, '¡Publicación creada con éxito! Se ha añadido al foro.')
-                return redirect('plataforma_comerciante')
-            else:
-                # Si la validación falla (ej. campos requeridos vacíos)
-                messages.error(request, 'Por favor, corrige los errores en el formulario de publicación.')
-                # Se redirige con el error, pero el formulario se perderá.
-                return redirect('plataforma_comerciante') # Redirigir a la plataforma
-        
-        except Exception as e:
-            messages.error(request, f'Ocurrió un error al publicar: {e}')
-            print(f"ERROR AL CREAR POST: {e}")
-            
-    # Si se accede por GET, simplemente redirige a la plataforma
-    return redirect('plataforma_comerciante')
-
-
-# VISTA PRINCIPAL DE LA PLATAFORMA DE COMERCIANTE (Modificada)
-def plataforma_comerciante_view(request):
-    """
-    Vista para la plataforma del comerciante, que ahora maneja el filtro de foro.
-    """
-    
-    # 1. Manejo del Filtro de Categoría
-    categoria_filtro = request.GET.get('categoria', None)
-    
-    if categoria_filtro and categoria_filtro != 'TODAS':
-        # Filtra por la clave corta (ej: 'DUDA')
-        posts = Post.objects.filter(categoria=categoria_filtro)
-    else:
-        posts = Post.objects.all() # Todos los posts por defecto
-        categoria_filtro = 'TODAS'
-        
-    # 2. Obtener el formulario de publicación vacío para el modal
-    post_form = PostForm()
-
-    # 3. Datos de Contexto
-    context = {
-        'post_form': post_form,
-        'posts': posts,
-        'CATEGORIA_POST_CHOICES': Post.CATEGORIA_POST_CHOICES,
-        'categoria_seleccionada': categoria_filtro,
-        'message': 'Bienvenido a la plataforma del comerciante.'
-    }
-    
-    return render(request, 'usuarios/plataforma_comerciante.html', context)

@@ -1,11 +1,10 @@
 # usuarios/models.py
 
 from django.db import models
-from django.utils import timezone # Importar timezone para la fecha de publicación
+from django.utils import timezone # Necesario para la fecha de publicación
 
-# Definición de opciones (CHOICES) para los campos de selección de Comerciante (se mantienen)
+# Definición de opciones (CHOICES) para Comerciante (se mantiene)
 RELACION_NEGOCIO_CHOICES = [
-    # ... (Se mantienen) ...
     ('DUENO', 'Dueño/a'),
     ('CONYUGE', 'Cónyuge'),
     ('HIJO', 'Hijo/a'),
@@ -14,7 +13,6 @@ RELACION_NEGOCIO_CHOICES = [
 ]
 
 TIPO_NEGOCIO_CHOICES = [
-    # ... (Se mantienen) ...
     ('ALMACEN', 'Almacén'),
     ('BOTILLERIA', 'Botillería'),
     ('CARNICERIA', 'Carnicería'),
@@ -25,7 +23,7 @@ TIPO_NEGOCIO_CHOICES = [
     ('OTRO_NEGOCIO', 'Otro'),
 ]
 
-# NUEVAS OPCIONES PARA EL FORO
+# OPCIONES PARA EL FORO (DEBE ESTAR FUERA DE LA CLASE POST para fácil acceso en Vistas/Templates)
 CATEGORIA_POST_CHOICES = [
     ('DUDA', 'Duda / Pregunta'),
     ('OPINION', 'Opinión / Debate'),
@@ -99,6 +97,7 @@ class Comerciante(models.Model):
         # Representación legible del objeto Comerciante
         return f"{self.nombre_apellido} ({self.email})"
 
+
 class Post(models.Model):
     """
     Modelo que representa una publicación en el foro.
@@ -126,7 +125,7 @@ class Post(models.Model):
         max_length=200,
         blank=True,
         null=True,
-        verbose_name='URL de Imagen/Link'
+        verbose_name='URL de Imagen/Link de Archivo Subido'
     )
     etiquetas = models.CharField(
         max_length=255,
@@ -141,7 +140,7 @@ class Post(models.Model):
     class Meta:
         verbose_name = 'Publicación de Foro'
         verbose_name_plural = 'Publicaciones de Foro'
-        ordering = ['-fecha_publicacion'] # Posts más nuevos primero
+        ordering = ['-fecha_publicacion']
 
     def __str__(self):
         return f"[{self.get_categoria_display()}] {self.titulo} por {self.comerciante.nombre_apellido}"

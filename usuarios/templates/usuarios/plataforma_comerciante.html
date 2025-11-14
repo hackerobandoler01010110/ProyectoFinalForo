@@ -42,7 +42,6 @@
         .off-canvas-panel.active {
             transform: translateX(0); /* Visible */
         }
-        /* Asumimos que los estilos de los iconos Material Symbols se cargan con el enlace de fuentes */
     </style>
 </head>
 <body class="bg-background-light dark:bg-background-dark font-display">
@@ -54,7 +53,7 @@
                         <img src="{% static 'img/logoClubAlmacen.png' %}" alt="Logo de la Plataforma" class="h-24 w-auto"/>
                     </div>
                 </div>
-                <div class="flex-1 max-w-lg">
+                <div class="flex-1 max-w-lg mx-auto">
                     <label class="flex flex-col min-w-40 !h-10 max-w-full">
                         <div class="flex w-full flex-1 items-stretch rounded-lg h-full">
                             <div class="text-text-muted-light dark:text-text-muted-dark flex border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 items-center justify-center pl-4 rounded-l-lg border-r-0">
@@ -64,7 +63,7 @@
                         </div>
                     </label>
                 </div>
-                <div class="flex flex-1 justify-end gap-4 items-center">
+                <div class="flex justify-end gap-4 items-center">
                     <button class="flex max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 w-10 bg-transparent text-text-muted-light dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-gray-700">
                         <span class="material-symbols-outlined text-2xl">notifications</span>
                     </button>
@@ -115,17 +114,6 @@
                                     </a>
                                 </div>
                             </div>
-                             <div class="bg-white dark:bg-white p-6 rounded-xl shadow-sm">
-                                <h3 class="text-text-light dark:text-text-dark text-lg font-bold mb-4">Actividad Reciente</h3>
-                                <div class="space-y-4">
-                                    <div class="flex items-start gap-3">
-                                        <span class="material-symbols-outlined text-text-muted-light dark:text-text-muted-dark mt-1">chat_bubble</span>
-                                        <p class="text-text-muted-light dark:text-text-muted-dark text-sm">
-                                            <span class="font-semibold text-text-light dark:text-text-dark">María</span> comentó en '<span class="text-primary font-medium">Debate sobre horarios</span>'
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
                         </div>
                     </aside>
 
@@ -133,25 +121,53 @@
                         <div class="space-y-8">
                             <div class="bg-white dark:bg-white rounded-xl shadow-sm p-6">
                                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
-                                    <h2 class="text-text-light dark:text-text-dark text-2xl font-bold tracking-[-0.015em] shrink-0">Foro de la Comunidad</h2>
+                                    <h1 class="text-text-light dark:text-text-dark text-2xl font-bold tracking-[-0.015em] shrink-0">Foro</h1>
                                     
-                                    <form method="GET" action="{% url 'plataforma_comerciante' %}" class="w-full sm:w-auto flex items-center justify-end">
-                                        <label for="categoria-filtro" class="text-text-muted-light dark:text-text-muted-dark text-sm mr-2 shrink-0 hidden sm:block">Filtrar:</label>
-                                        <select name="categoria" id="categoria-filtro" onchange="this.form.submit()"
-                                            class="form-select text-text-light dark:text-text-dark border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 rounded-lg focus:ring-primary focus:border-primary">
-                                            <option value="TODAS" {% if categoria_seleccionada == 'TODAS' %}selected{% endif %}>Todas las Categorías</option>
-                                            {% for key, value in CATEGORIA_POST_CHOICES %}
-                                                <option value="{{ key }}" {% if categoria_seleccionada == key %}selected{% endif %}>{{ value }}</option>
-                                            {% endfor %}
-                                        </select>
-                                    </form>
+                                    <div class="flex flex-col sm:flex-row gap-4 items-center justify-end w-full sm:w-auto">
+                                        
+                                        <div class="relative w-full lg:w-48">
+                                            <button type="button" 
+                                                    id="filter-toggle-btn"
+                                                    class="flex justify-between items-center w-full p-3 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-text-light dark:text-text-dark font-semibold border border-gray-300 dark:border-gray-600"
+                                                    onclick="toggleFilter('category-checklist-content', 'filter-icon-btn')">
+                                                <span>Filtrar</span>
+                                                <span id="filter-icon-btn" class="material-symbols-outlined text-base transition-transform duration-300">add</span>
+                                            </button>
 
-                                    <button onclick="document.getElementById('off-canvas-publicar').classList.add('active');" 
-                                            class="hidden lg:flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-12 px-5 bg-secondary text-white gap-2 text-base font-bold leading-normal tracking-[0.015em] hover:bg-secondary/90 transition-colors duration-200">
-                                        <span class="material-symbols-outlined">add</span>
-                                        <span class="truncate">Crear publicación</span>
-                                    </button>
-                                </div>
+                                            <form method="GET" action="{% url 'plataforma_comerciante' %}" id="category-checklist-content" class="absolute right-0 mt-1 z-10 hidden w-full lg:w-48 p-3 rounded-lg shadow-xl bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 space-y-2">
+                                                
+                                                <p class="text-sm font-medium text-text-light dark:text-text-dark mb-1 border-b pb-1">Seleccionar Categorías:</p>
+
+                                                <label class="flex items-center space-x-3">
+                                                    <input type="checkbox" name="categoria" value="TODAS" 
+                                                           class="form-checkbox h-4 w-4 text-primary rounded border-gray-300 focus:ring-primary"
+                                                           {% if 'TODAS' in categoria_seleccionada or not categoria_seleccionada %}checked{% endif %}
+                                                           onclick="document.querySelectorAll('#category-checklist-content input[name=categoria]').forEach(cb => { if(cb.value !== 'TODAS') cb.checked = false; });">
+                                                    <span class="text-sm text-text-light dark:text-text-dark">Todas</span>
+                                                </label>
+                                                
+                                                {% for key, value in CATEGORIA_POST_CHOICES %}
+                                                    <label class="flex items-center space-x-3">
+                                                        <input type="checkbox" name="categoria" value="{{ key }}" 
+                                                               class="form-checkbox h-4 w-4 text-primary rounded border-gray-300 focus:ring-primary"
+                                                               {% if key in categoria_seleccionada and 'TODAS' not in categoria_seleccionada %}checked{% endif %}
+                                                               onclick="document.querySelector('#category-checklist-content input[value=TODAS]').checked = false;">
+                                                        <span class="text-sm text-text-light dark:text-text-dark">{{ value }}</span>
+                                                    </label>
+                                                {% endfor %}
+
+                                                <button type="submit" class="mt-4 w-full h-8 bg-primary text-white text-sm rounded hover:bg-primary/90 transition-colors">
+                                                    Aplicar Filtro
+                                                </button>
+                                            </form>
+                                        </div>
+                                        <button onclick="document.getElementById('off-canvas-publicar').classList.add('active');" 
+                                                class="min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-12 px-5 bg-secondary text-white gap-2 text-base font-bold leading-normal tracking-[0.015em] hover:bg-secondary/90 transition-colors duration-200 hidden sm:flex">
+                                            <span class="material-symbols-outlined">add</span>
+                                            <span class="truncate">Crear publicación</span>
+                                        </button>
+                                    </div>
+                                    </div>
                                 
                                 <div class="space-y-4">
                                     {% for post in posts %}
@@ -301,10 +317,19 @@
             </div>
 
             <div>
-                <label for="{{ post_form.imagen_o_link.id_for_label }}" class="block text-sm font-medium text-text-light dark:text-text-dark mb-1">{{ post_form.imagen_o_link.label }}</label>
-                {{ post_form.imagen_o_link }}
-                <p class="text-xs text-text-muted-light dark:text-text-muted-dark mt-1">Sube una imagen o comparte un enlace.</p>
-                {% for error in post_form.imagen_o_link.errors %}
+                <label for="{{ post_form.uploaded_file.id_for_label }}" class="block text-sm font-medium text-text-light dark:text-text-dark mb-1">{{ post_form.uploaded_file.label }}</label>
+                {{ post_form.uploaded_file }}
+                <p class="text-xs text-text-muted-light dark:text-text-muted-dark mt-1">Sube un archivo desde tu PC.</p>
+                {% for error in post_form.uploaded_file.errors %}
+                    <p class="text-red-500 text-xs mt-1">{{ error }}</p>
+                {% endfor %}
+            </div>
+            
+            <div>
+                <label for="{{ post_form.url_link.id_for_label }}" class="block text-sm font-medium text-text-light dark:text-text-dark mb-1">{{ post_form.url_link.label }}</label>
+                {{ post_form.url_link }}
+                <p class="text-xs text-text-muted-light dark:text-text-muted-dark mt-1">Opcional: URL de una imagen o link externo.</p>
+                {% for error in post_form.url_link.errors %}
                     <p class="text-red-500 text-xs mt-1">{{ error }}</p>
                 {% endfor %}
             </div>
@@ -325,5 +350,21 @@
             </div>
         </form>
     </div>
+<script>
+    function toggleFilter(contentId, iconId) {
+        const content = document.getElementById(contentId);
+        const icon = document.getElementById(iconId);
+        
+        // Toggle visibility
+        content.classList.toggle('hidden');
+        
+        // Change icon (add/remove)
+        if (content.classList.contains('hidden')) {
+            icon.textContent = 'add';
+        } else {
+            icon.textContent = 'remove';
+        }
+    }
+</script>
 </body>
 </html>
