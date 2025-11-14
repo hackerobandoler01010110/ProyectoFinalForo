@@ -1,5 +1,5 @@
 from django import forms
-from .models import Comerciante, RELACION_NEGOCIO_CHOICES, TIPO_NEGOCIO_CHOICES, Post, CATEGORIA_POST_CHOICES
+from .models import Comerciante, Post, RELACION_NEGOCIO_CHOICES, TIPO_NEGOCIO_CHOICES, CATEGORIA_POST_CHOICES, INTERESTS_CHOICES # Importar las nuevas choices
 # Opciones de comuna
 COMUNA_CHOICES = [
     ('', 'Selecciona tu comuna'),
@@ -149,3 +149,44 @@ class PostForm(forms.ModelForm):
         # La vista (views.py) es la que se encarga de guardar este archivo y actualizar 'imagen_url'.
         
         return cleaned_data
+    
+class ProfilePhotoForm(forms.ModelForm):
+    """Formulario para actualizar solo la foto de perfil."""
+    class Meta:
+        model = Comerciante
+        fields = ['foto_perfil']
+        # No añadimos widgets aquí, el diseño se maneja con JS y CSS en el HTML.
+        
+class BusinessDataForm(forms.ModelForm):
+    """Formulario para actualizar los datos del negocio (Relación, Tipo, Comuna, Nombre)."""
+    class Meta:
+        model = Comerciante
+        fields = ['relacion_negocio', 'tipo_negocio', 'comuna', 'nombre_negocio']
+        
+        widgets = {
+            'relacion_negocio': forms.Select(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white'}),
+            'tipo_negocio': forms.Select(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white'}),
+            'comuna': forms.TextInput(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white', 'placeholder': 'Ej: Estación Central'}),
+            'nombre_negocio': forms.TextInput(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white', 'placeholder': 'Ej: Minimarket El Sol'}),
+        }
+
+class ContactInfoForm(forms.ModelForm):
+    """Formulario para actualizar el email y WhatsApp."""
+    class Meta:
+        model = Comerciante
+        fields = ['email', 'whatsapp']
+        
+        widgets = {
+            'email': forms.EmailInput(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white', 'placeholder': 'tu@correo.cl'}),
+            'whatsapp': forms.TextInput(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white', 'placeholder': '+569XXXXXXXX'}),
+        }
+
+class InterestsForm(forms.Form):
+    """Formulario para seleccionar múltiples intereses de la lista definida."""
+    
+    intereses = forms.MultipleChoiceField(
+        choices=INTERESTS_CHOICES,
+        widget=forms.CheckboxSelectMultiple,
+        required=False,
+        label="Selecciona tus intereses"
+    )
