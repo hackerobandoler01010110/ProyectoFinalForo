@@ -1,4 +1,4 @@
-# usuarios/views.py (CONTENIDO RESTAURADO)
+# usuarios/views.py (CONTENIDO MODIFICADO)
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
@@ -116,7 +116,7 @@ def logout_view(request):
     return redirect('login')
 
 
-# --- VISTA PRINCIPAL DE LA PLATAFORMA (Manteniendo conteo para feed) ---
+# --- VISTA PRINCIPAL DE LA PLATAFORMA (Actualizada para forzar el orden) ---
 
 def plataforma_comerciante_view(request):
     global current_logged_in_user
@@ -125,18 +125,24 @@ def plataforma_comerciante_view(request):
         messages.warning(request, 'Por favor, inicia sesión para acceder a la plataforma.')
         return redirect('login') 
         
-    # Obtener Posts con Conteo de Comentarios y Likes (Necesario para el feed)
+    # Obtener Posts con Conteo de Comentarios, Likes y si el usuario actual ya dio like
     posts_query = Post.objects.select_related('comerciante').annotate(
         comentarios_count=Count('comentarios', distinct=True), 
-        likes_count=Count('likes', distinct=True) 
+        likes_count=Count('likes', distinct=True),
+        is_liked=Count('likes', filter=Q(likes__comerciante=current_logged_in_user)) 
+    ).prefetch_related(
+        'comentarios', 
+        'comentarios__comerciante' 
     )
     
     categoria_filtros = request.GET.getlist('categoria', [])
     
     if categoria_filtros and 'TODAS' not in categoria_filtros:
-        posts = posts_query.filter(categoria__in=categoria_filtros)
+        # Se filtra y se ORDENA explícitamente por el más nuevo
+        posts = posts_query.filter(categoria__in=categoria_filtros).order_by('-fecha_publicacion')
     else:
-        posts = posts_query.all()
+        # Se obtiene todo y se ORDENA explícitamente por el más nuevo
+        posts = posts_query.all().order_by('-fecha_publicacion')
         if not categoria_filtros or 'TODAS' in categoria_filtros:
             categoria_filtros = ['TODAS']
         
@@ -147,6 +153,7 @@ def plataforma_comerciante_view(request):
         'posts': posts,
         'CATEGORIA_POST_CHOICES': Post._meta.get_field('categoria').choices, 
         'categoria_seleccionada': categoria_filtros, 
+        'comentario_form': ComentarioForm(), 
         'message': f'Bienvenido a la plataforma, {current_logged_in_user.nombre_apellido.split()[0]}.',
     }
     
@@ -199,7 +206,6 @@ def perfil_view(request):
     comerciante = current_logged_in_user 
 
     if request.method == 'POST':
-        # ... (Lógica de edición de perfil, no modificada)
         action = request.POST.get('action') 
         
         if action == 'edit_photo':
@@ -279,10 +285,10 @@ def perfil_view(request):
     return render(request, 'usuarios/perfil.html', context)
 
 
-# --- RESTAURADO: VISTAS DE DETALLE DE POST Y ACCIONES (con recarga) ---
+# --- VISTAS DE DETALLE DE POST Y ACCIONES (Modificadas para foro principal) ---
 
 def post_detail_view(request, post_id):
-    """Muestra un post individual y su lista de comentarios (con recarga)."""
+    """Muestra un post individual y su lista de comentarios (mantenida por si se usa, pero no es el destino principal)."""
     global current_logged_in_user
     
     if not current_logged_in_user:
@@ -310,7 +316,7 @@ def post_detail_view(request, post_id):
 
 
 def add_comment_view(request, post_id):
-    """Maneja la lógica para añadir un comentario a un post (con recarga)."""
+    """Maneja la lógica para añadir un comentario y redirige al foro principal."""
     global current_logged_in_user
     
     if not current_logged_in_user:
@@ -327,17 +333,19 @@ def add_comment_view(request, post_id):
             nuevo_comentario.comerciante = current_logged_in_user
             nuevo_comentario.save()
             messages.success(request, '¡Comentario publicado con éxito!')
-            return redirect('post_detail', post_id=post.id)
+            # REDIRECCIÓN: Va a la plataforma principal
+            return redirect('plataforma_comerciante') 
         else:
             messages.error(request, 'Error al publicar el comentario. Asegúrate de que el contenido no esté vacío.')
-            # Si hay error, redirige y el post_detail_view lo mostrará.
-            return redirect('post_detail', post_id=post.id)
+            # REDIRECCIÓN: Va a la plataforma principal
+            return redirect('plataforma_comerciante') 
             
-    return redirect('post_detail', post_id=post_id)
+    # REDIRECCIÓN: Va a la plataforma principal
+    return redirect('plataforma_comerciante')
 
 
 def like_post_view(request, post_id):
-    """Maneja la adición/eliminación de likes a un post (con recarga)."""
+    """Maneja la adición/eliminación de likes y redirige al foro principal."""
     global current_logged_in_user
 
     if not current_logged_in_user:
@@ -361,4 +369,5 @@ def like_post_view(request, post_id):
             # Si se creó, es un nuevo like
             messages.success(request, '¡Like registrado!')
 
-    return redirect('post_detail', post_id=post.id)
+    # REDIRECCIÓN: Va a la plataforma principal
+    return redirect('plataforma_comerciante')

@@ -164,7 +164,15 @@
                         <div class="bg-white dark:bg-white p-6 rounded-xl shadow-sm">
                             <h3 class="text-lg font-bold text-text-light dark:text-text-dark mb-4">Configuración</h3>
                             <div class="space-y-4">
+                                <div class="border-t pt-4">
+                                    <h3 class="text-lg font-bold text-text-light dark:text-text-dark mb-4">Cuenta</h3>
+                                    <button onclick="confirmLogout()" 
+                                            class="flex items-center gap-2 text-red-600 bg-red-50/50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/40 p-3 rounded-lg w-full transition-colors font-semibold justify-center">
+                                        <span class="material-symbols-outlined text-xl">logout</span>
+                                        Cerrar Sesión
+                                    </button>
                                 </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -172,7 +180,7 @@
         </div>
     </div>
 
-    {% comment %} Modal para Edición de Foto {% endcomment %}
+    {% comment %} Modales sin cambios (omito por brevedad) {% endcomment %}
     <div id="editPhotoModal" class="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center z-50 hidden transition-opacity">
         <div class="bg-white dark:bg-background-dark p-6 rounded-xl shadow-2xl w-full max-w-sm">
             <h3 class="text-xl font-bold text-text-light dark:text-text-dark mb-4">Cambiar Foto de Perfil</h3>
@@ -199,7 +207,6 @@
         </div>
     </div>
 
-    {% comment %} Modal para Edición de Contacto (Email y WhatsApp) {% endcomment %}
     <div id="editContactModal" class="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center z-50 hidden transition-opacity">
         <div class="bg-white dark:bg-background-dark p-6 rounded-xl shadow-2xl w-full max-w-md">
             <h3 class="text-xl font-bold text-text-light dark:text-text-dark mb-4">Editar Datos de Contacto</h3>
@@ -227,7 +234,6 @@
         </div>
     </div>
 
-    {% comment %} Modal para Edición de Negocio {% endcomment %}
     <div id="editBusinessModal" class="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center z-50 hidden transition-opacity">
         <div class="bg-white dark:bg-background-dark p-6 rounded-xl shadow-2xl w-full max-w-md">
             <h3 class="text-xl font-bold text-text-light dark:text-text-dark mb-4">Editar Datos del Negocio</h3>
@@ -267,7 +273,6 @@
         </div>
     </div>
 
-    {% comment %} Modal para Edición de Intereses (Múltiple Selección) {% endcomment %}
     <div id="editInterestsModal" class="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center z-50 hidden transition-opacity">
         <div class="bg-white dark:bg-background-dark p-6 rounded-xl shadow-2xl w-full max-w-lg">
             <h3 class="text-xl font-bold text-text-light dark:text-text-dark mb-4">Editar Mis Intereses (Elige los que quieras)</h3>
@@ -328,6 +333,15 @@
                 document.getElementById('fileNameDisplay').textContent = 'Haz clic para subir una foto';
             }
         });
+        
+        // NUEVA FUNCIÓN: Confirma el cierre de sesión antes de redirigir
+        function confirmLogout() {
+            // Muestra la ventana de confirmación nativa
+            if (window.confirm("¿Estás seguro de que quieres cerrar la sesión?")) {
+                // Si el usuario confirma, redirige al URL de logout de Django
+                window.location.href = "{% url 'logout' %}";
+            }
+        }
     </script>
 </body>
 </html>

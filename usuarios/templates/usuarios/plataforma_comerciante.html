@@ -180,8 +180,8 @@
                                 <div class="space-y-4">
                                     {% for post in posts %}
                                     
-                                    <a href="{% url 'post_detail' post_id=post.id %}" class="block text-decoration-none text-inherit">
-                                        <div class="flex p-4 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-100 transition-colors cursor-pointer">
+                                    <div id="post-{{ post.id }}" class="block text-decoration-none text-inherit bg-white dark:bg-white rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+                                        <div class="flex p-4 hover:bg-gray-50 dark:hover:bg-gray-100 transition-colors">
                                             
                                             <div class="shrink-0 mr-3">
                                                 <div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-12" 
@@ -202,30 +202,105 @@
                                                 </div>
                                                 
                                                 <p class="text-base font-semibold text-text-light dark:text-text-dark mb-1">{{ post.titulo }}</p>
-                                                <p class="text-text-light dark:text-text-dark text-sm mb-2 whitespace-pre-wrap">{{ post.contenido|truncatechars:200 }}</p>
+                                                <p class="text-text-light dark:text-text-dark text-sm mb-2 whitespace-pre-wrap">{{ post.contenido|truncatechars:300 }}</p>
 
                                                 {% if post.imagen_url %}
                                                     <div class="block mb-2 overflow-hidden rounded-lg border border-gray-200 dark:border-gray-300">
-                                                        <img src="{{ post.imagen_url }}" alt="Contenido multimedia del post" class="max-h-60 w-full object-cover"/>
+                                                        <a href="{{ post.imagen_url }}" target="_blank">
+                                                            <img src="{{ post.imagen_url }}" alt="Contenido multimedia del post" class="max-h-60 w-full object-cover"/>
+                                                        </a>
                                                     </div>
                                                 {% endif %}
                                                 
                                                 <div class="flex items-center text-text-muted-light dark:text-text-muted-dark text-sm mt-3">
-                                                    <div class="flex items-center mr-4">
+                                                    
+                                                    <form method="POST" action="{% url 'like_post' post_id=post.id %}" class="inline">
+                                                        {% csrf_token %}
+                                                        <button type="submit"
+                                                                class="flex items-center mr-6 hover:text-red-500 transition-colors">
+                                                            <span class="material-symbols-outlined text-base mr-1 
+                                                                {% if post.is_liked %} text-red-500 {% else %} text-gray-500 {% endif %}">
+                                                                favorite
+                                                            </span>
+                                                            <span class="likes-count">{{ post.likes_count }}</span>
+                                                        </button>
+                                                    </form>
+                                                    
+                                                    <button onclick="toggleComments('{{ post.id }}')" 
+                                                            class="flex items-center mr-4 hover:text-primary transition-colors">
                                                         <span class="material-symbols-outlined text-base mr-1">forum</span>
-                                                        <span>{{ post.comentarios_count }}</span>
-                                                    </div>
-                                                    <div class="flex items-center mr-4">
-                                                        <span class="material-symbols-outlined text-base mr-1">favorite</span>
-                                                        <span>{{ post.likes_count }}</span>
-                                                    </div>
+                                                        <span>{{ post.comentarios_count }} Comentarios</span>
+                                                    </button>
+                                                    
                                                     <p class="text-xs text-primary/70">
                                                         {% if post.etiquetas %}Etiquetas: {{ post.etiquetas }}{% endif %}
                                                     </p>
                                                 </div>
-                                            </div>
+                                                </div>
                                         </div>
-                                    </a>
+
+                                        <div id="comments-section-{{ post.id }}" class="p-4 border-t border-gray-200 dark:border-gray-700 hidden">
+                                            
+                                            <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 mb-4">
+                                                <h4 class="text-sm font-bold text-text-light dark:text-text-dark mb-3">Añadir Comentario</h4>
+                                                <form method="POST" action="{% url 'add_comment' post_id=post.id %}" novalidate>
+                                                    {% csrf_token %}
+                                                    <div class="mb-3">
+                                                        <textarea name="{{ comentario_form.contenido.name }}" 
+                                                            placeholder="Escribe tu comentario..." rows="2"
+                                                            class="w-full resize-none rounded-lg border border-gray-300 dark:border-gray-600 focus:ring-primary focus:border-primary p-[10px] text-sm h-auto min-h-20"
+                                                        ></textarea>
+                                                        {% for error in comentario_form.contenido.errors %}
+                                                            <p class="text-red-500 text-xs mt-1">{{ error }}</p>
+                                                        {% endfor %}
+                                                    </div>
+                                                    <div class="flex justify-end">
+                                                        <button type="submit" class="px-4 py-1.5 bg-primary text-white text-xs font-bold rounded-lg hover:bg-primary/90 transition-colors">
+                                                            Publicar
+                                                        </button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                            
+                                            <h3 class="text-base font-bold text-text-light dark:text-text-dark mb-4 border-b pb-2">Comentarios Recientes</h3>
+                                            <div id="comment-list-{{ post.id }}" class="space-y-4">
+                                                {% for comentario in post.comentarios.all %} 
+                                                    
+                                                    {# LÓGICA DE OCULTACIÓN: Oculta si el contador es mayor que 5 #}
+                                                    <div class="flex py-2 border-b border-gray-100 dark:border-gray-800 last:border-b-0 comment-item-{{ post.id }} {% if forloop.counter > 5 %} hidden {% endif %}">
+                                                        
+                                                        <div class="shrink-0 mr-3">
+                                                            <div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-8" 
+                                                                 style='background-image: url("{{ comentario.comerciante.get_profile_picture_url }}");'>
+                                                            </div>
+                                                        </div>
+                                                        
+                                                        <div class="flex-1 min-w-0">
+                                                            <div class="flex items-center text-xs mb-1">
+                                                                <p class="font-bold text-text-light dark:text-text-dark mr-2">{{ comentario.comerciante.nombre_apellido|truncatewords:2 }}</p>
+                                                                <p class="text-text-muted-light dark:text-text-muted-dark">@{{ comentario.comerciante.nombre_negocio|slugify }}</p>
+                                                                <span class="text-text-muted-light dark:text-text-muted-dark mx-1">•</span>
+                                                                <p class="text-text-muted-light dark:text-text-muted-dark">{{ comentario.fecha_creacion|timesince }}</p>
+                                                            </div>
+                                                            <p class="text-text-light dark:text-text-dark text-sm whitespace-pre-wrap">{{ comentario.contenido }}</p>
+                                                        </div>
+                                                    </div>
+                                                    
+                                                {% empty %}
+                                                    <p class="text-text-muted-light text-sm text-center py-2">Sé el primero en comentar esta publicación.</p>
+                                                {% endfor %}
+                                            </div>
+                                            
+                                            {% if post.comentarios_count > 5 %}
+                                            <div class="mt-4 text-center">
+                                                <button id="show-more-btn-{{ post.id }}" onclick="toggleHiddenComments('{{ post.id }}')" class="text-primary text-sm font-semibold hover:underline">
+                                                    Ver más comentarios
+                                                </button>
+                                            </div>
+                                            {% endif %}
+                                            
+                                        </div>
+                                        </div>
                                     {% empty %}
                                         <div class="p-4 text-center text-text-muted-light dark:text-text-muted-dark">
                                             Aún no hay publicaciones en esta categoría. ¡Sé el primero en crear una!
@@ -386,6 +461,47 @@
             icon.textContent = 'add';
         } else {
             icon.textContent = 'remove';
+        }
+    }
+    
+    // FUNCIÓN: Para mostrar/ocultar toda la sección de comentarios
+    function toggleComments(postId) {
+        const commentsSection = document.getElementById('comments-section-' + postId);
+        
+        if (commentsSection) {
+            commentsSection.classList.toggle('hidden');
+        }
+    }
+
+    // NUEVA FUNCIÓN: Muestra/Oculta los comentarios ocultos y cambia el texto del botón.
+    function toggleHiddenComments(postId) {
+        const commentsContainer = document.getElementById('comment-list-' + postId);
+        // Selector de todos los ítems de comentario para este post
+        const allComments = commentsContainer.querySelectorAll('.comment-item-' + postId);
+        const showMoreBtn = document.getElementById('show-more-btn-' + postId);
+
+        if (!showMoreBtn) return;
+
+        // Comprobamos el estado actual basándonos en el texto del botón
+        if (showMoreBtn.textContent.includes('Ver más')) {
+            
+            // MODO "VER MÁS" -> MOSTRAR TODO
+            allComments.forEach(comment => {
+                comment.classList.remove('hidden');
+            });
+            
+            showMoreBtn.textContent = 'Ver menos comentarios';
+            
+        } else {
+            
+            // MODO "VER MENOS" -> OCULTAR DESDE EL SEXTO
+            
+            // Oculta los comentarios a partir del 6º elemento (índice 5)
+            for(let i = 5; i < allComments.length; i++) {
+                allComments[i].classList.add('hidden');
+            }
+            
+            showMoreBtn.textContent = 'Ver más comentarios';
         }
     }
 </script>

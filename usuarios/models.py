@@ -1,4 +1,4 @@
-# usuarios/models.py (CONTENIDO RESTAURADO)
+# usuarios/models.py (CONTENIDO MODIFICADO)
 
 from django.db import models
 from django.core.validators import RegexValidator
@@ -157,7 +157,8 @@ class Comentario(models.Model):
     class Meta:
         verbose_name = 'Comentario'
         verbose_name_plural = 'Comentarios'
-        ordering = ['fecha_creacion']
+        # CAMBIO: Ordenar por fecha de creación descendente (más nuevo primero)
+        ordering = ['-fecha_creacion'] 
 
     def __str__(self):
         return f"Comentario de {self.comerciante.nombre_apellido} en {self.post.titulo[:20]}"
