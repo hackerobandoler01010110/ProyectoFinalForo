@@ -45,7 +45,7 @@
                     </div>
                     <nav class="hidden md:flex gap-6 text-text-muted-light dark:text-text-muted-dark font-semibold text-sm">
                         <a href="{% url 'plataforma_comerciante' %}" class="hover:text-primary transition-colors">Plataforma</a>
-                        <a href="#" class="hover:text-primary transition-colors">Directorio</a>
+                        <a href="{% url 'beneficios' %}" class="hover:text-primary transition-colors">Beneficios</a> <a href="#" class="hover:text-primary transition-colors">Directorio</a>
                         <a href="#" class="hover:text-primary transition-colors">Recursos</a>
                         <a href="#" class="hover:text-primary transition-colors">Comunidad</a>
                     </nav>
@@ -180,7 +180,6 @@
         </div>
     </div>
 
-    {% comment %} Modales sin cambios (omito por brevedad) {% endcomment %}
     <div id="editPhotoModal" class="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center z-50 hidden transition-opacity">
         <div class="bg-white dark:bg-background-dark p-6 rounded-xl shadow-2xl w-full max-w-sm">
             <h3 class="text-xl font-bold text-text-light dark:text-text-dark mb-4">Cambiar Foto de Perfil</h3>
@@ -334,7 +333,7 @@
             }
         });
         
-        // NUEVA FUNCIÓN: Confirma el cierre de sesión antes de redirigir
+        // FUNCIÓN: Confirma el cierre de sesión antes de redirigir
         function confirmLogout() {
             // Muestra la ventana de confirmación nativa
             if (window.confirm("¿Estás seguro de que quieres cerrar la sesión?")) {

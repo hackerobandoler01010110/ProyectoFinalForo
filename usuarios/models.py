@@ -1,10 +1,12 @@
-# usuarios/models.py (CONTENIDO MODIFICADO)
+# usuarios/models.py (CONTENIDO COMPLETO MODIFICADO)
 
 from django.db import models
 from django.core.validators import RegexValidator
 from django.utils import timezone
 from django.conf import settings
 from django.templatetags.static import static 
+from django.contrib.auth.models import User # Importado para el campo 'creado_por'
+from datetime import timedelta # Importado para cálculos de fecha, aunque no usado directamente aquí
 
 # --- Opciones de Selección Múltiple ---
 
@@ -56,6 +58,28 @@ CATEGORIA_POST_CHOICES = [
     ('GENERAL', 'General'),
 ]
 
+# Definición de CATEGORIAS para Beneficio
+CATEGORIAS = [
+    ('DESCUENTO', 'Descuento y Ofertas'),
+    ('SORTEO', 'Sorteos y Rifas'),
+    ('CAPACITACION', 'Capacitación y Cursos'),
+    ('ACCESO', 'Acceso Exclusivo'),
+    ('EVENTO', 'Eventos Especiales'),
+]
+
+ESTADO_BENEFICIO = [
+    ('ACTIVO', 'Activo'),
+    ('TERMINADO', 'Terminado'),
+    ('BENEFICIO_ACTIVO', 'Beneficio Reclamado'), 
+]
+
+NIVELES = [
+    ('BRONCE', 'Bronce'),
+    ('PLATA', 'Plata'),
+    ('ORO', 'Oro'),
+    ('DIAMANTE', 'Diamante'),
+]
+
 
 class Comerciante(models.Model):
     # Campos de Autenticación y Contacto
@@ -99,6 +123,10 @@ class Comerciante(models.Model):
         help_text="Códigos de intereses separados por coma."
     )
     
+    # --- CAMPOS AGREGADOS PARA PUNTOS ---
+    puntos = models.IntegerField(default=0, verbose_name='Puntos Acumulados')
+    nivel_actual = models.CharField(max_length=50, choices=NIVELES, default='BRONCE', verbose_name='Nivel de Beneficios')
+
     class Meta:
         verbose_name = 'Comerciante'
         verbose_name_plural = 'Comerciantes'
@@ -136,8 +164,7 @@ class Post(models.Model):
     def __str__(self):
         return f"[{self.get_categoria_display()}] {self.titulo} por {self.comerciante.nombre_apellido}"
 
-# --- MODELOS COMENTARIOS Y LIKES (Necesarios para que las tablas existan) ---
-
+# --- MODELOS COMENTARIOS Y LIKES ---
 class Comentario(models.Model):
     post = models.ForeignKey(
         Post, 
@@ -157,8 +184,7 @@ class Comentario(models.Model):
     class Meta:
         verbose_name = 'Comentario'
         verbose_name_plural = 'Comentarios'
-        # CAMBIO: Ordenar por fecha de creación descendente (más nuevo primero)
-        ordering = ['-fecha_creacion'] 
+        ordering = ['-fecha_creacion']
 
     def __str__(self):
         return f"Comentario de {self.comerciante.nombre_apellido} en {self.post.titulo[:20]}"
@@ -185,3 +211,37 @@ class Like(models.Model):
 
     def __str__(self):
         return f"Like de {self.comerciante.nombre_apellido} a {self.post.titulo[:20]}"
+
+
+# --- MODELO BENEFICIO (Corregido) ---
+class Beneficio(models.Model):
+    titulo = models.CharField(max_length=200, verbose_name="Título del Beneficio")
+    descripcion = models.TextField(verbose_name="Descripción")
+    foto = models.ImageField(upload_to='beneficios_fotos/', null=True, blank=True, verbose_name="Imagen") 
+    
+    # CORRECCIÓN: Hacemos 'vence' opcional para evitar el error de migración.
+    vence = models.DateField(null=True, blank=True, verbose_name="Fecha de Vencimiento") 
+    
+    categoria = models.CharField(max_length=50, choices=CATEGORIAS, default='DESCUENTO', verbose_name="Categoría") 
+    
+    # Campos de gestión
+    puntos_requeridos = models.IntegerField(default=0, verbose_name="Puntos Requeridos")
+    estado = models.CharField(max_length=30, choices=ESTADO_BENEFICIO, default='ACTIVO')
+    
+    # Campo para registrar quién subió el beneficio
+    creado_por = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL, 
+        null=True,
+        blank=True,
+        verbose_name='Subido por'
+    )
+    fecha_creacion = models.DateTimeField(default=timezone.now)
+    
+    class Meta:
+        verbose_name = 'Beneficio y Promoción'
+        verbose_name_plural = 'Beneficios y Promociones'
+        ordering = ['-fecha_creacion']
+
+    def __str__(self):
+        return f"[{self.get_categoria_display()}] {self.titulo}"

@@ -52,6 +52,11 @@
                     <div class="flex items-center gap-3">
                         <img src="{% static 'img/logoClubAlmacen.png' %}" alt="Logo de la Plataforma" class="h-24 w-auto"/>
                     </div>
+                    <nav class="hidden md:flex gap-6 text-text-muted-light dark:text-text-muted-dark font-semibold text-sm">
+                        <a href="{% url 'plataforma_comerciante' %}" class="text-primary transition-colors">Plataforma</a>
+                        <a href="{% url 'beneficios' %}" class="hover:text-primary transition-colors">Beneficios</a>
+                        <a href="{% url 'perfil' %}" class="hover:text-primary transition-colors">Perfil</a>
+                    </nav>
                 </div>
                 <div class="flex-1 max-w-lg mx-auto">
                     <label class="flex flex-col min-w-40 !h-10 max-w-full">
@@ -476,7 +481,6 @@
     // NUEVA FUNCIÓN: Muestra/Oculta los comentarios ocultos y cambia el texto del botón.
     function toggleHiddenComments(postId) {
         const commentsContainer = document.getElementById('comment-list-' + postId);
-        // Selector de todos los ítems de comentario para este post
         const allComments = commentsContainer.querySelectorAll('.comment-item-' + postId);
         const showMoreBtn = document.getElementById('show-more-btn-' + postId);
 

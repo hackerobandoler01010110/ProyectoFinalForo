@@ -1,15 +1,20 @@
-# usuarios/views.py (CONTENIDO MODIFICADO)
+# usuarios/views.py (CONTENIDO COMPLETO Y FINAL MODIFICADO)
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.hashers import make_password, check_password 
 from django.core.files.storage import default_storage 
 from django.utils import timezone
-from django.db.models import Count, Q # Se mantienen para contar likes/comentarios en el feed
+from django.db.models import Count, Q 
 from django.db import IntegrityError 
+from datetime import timedelta 
+from django.contrib.auth.decorators import login_required 
 
 # Importamos los modelos y las opciones
-from .models import Comerciante, Post, Like, Comentario, INTERESTS_CHOICES 
+from .models import (
+    Comerciante, Post, Like, Comentario, INTERESTS_CHOICES, Beneficio,
+    NIVELES, CATEGORIAS 
+) 
 
 # Importamos todos los formularios necesarios
 from .forms import (
@@ -33,7 +38,7 @@ ROLES = {
     'INVITADO': 'Invitado'
 }
 
-# --- VISTAS BÁSICAS DE AUTENTICACIÓN (Se mantienen) ---
+# --- VISTAS BÁSICAS DE AUTENTICACIÓN ---
 
 def index(request):
     return redirect('registro') 
@@ -116,7 +121,7 @@ def logout_view(request):
     return redirect('login')
 
 
-# --- VISTA PRINCIPAL DE LA PLATAFORMA (Actualizada para forzar el orden) ---
+# --- VISTA PRINCIPAL DE LA PLATAFORMA (Foro) ---
 
 def plataforma_comerciante_view(request):
     global current_logged_in_user
@@ -125,7 +130,6 @@ def plataforma_comerciante_view(request):
         messages.warning(request, 'Por favor, inicia sesión para acceder a la plataforma.')
         return redirect('login') 
         
-    # Obtener Posts con Conteo de Comentarios, Likes y si el usuario actual ya dio like
     posts_query = Post.objects.select_related('comerciante').annotate(
         comentarios_count=Count('comentarios', distinct=True), 
         likes_count=Count('likes', distinct=True),
@@ -138,10 +142,8 @@ def plataforma_comerciante_view(request):
     categoria_filtros = request.GET.getlist('categoria', [])
     
     if categoria_filtros and 'TODAS' not in categoria_filtros:
-        # Se filtra y se ORDENA explícitamente por el más nuevo
         posts = posts_query.filter(categoria__in=categoria_filtros).order_by('-fecha_publicacion')
     else:
-        # Se obtiene todo y se ORDENA explícitamente por el más nuevo
         posts = posts_query.all().order_by('-fecha_publicacion')
         if not categoria_filtros or 'TODAS' in categoria_filtros:
             categoria_filtros = ['TODAS']
@@ -194,7 +196,7 @@ def publicar_post_view(request):
     return redirect('plataforma_comerciante')
 
 
-# --- VISTA DE PERFIL (Se mantiene) ---
+# --- VISTA DE PERFIL ---
 
 def perfil_view(request):
     global current_logged_in_user
@@ -285,24 +287,89 @@ def perfil_view(request):
     return render(request, 'usuarios/perfil.html', context)
 
 
-# --- VISTAS DE DETALLE DE POST Y ACCIONES (Modificadas para foro principal) ---
+# --- VISTA DE BENEFICIOS (Modificada para filtrar y ordenar) ---
+
+def beneficios_view(request):
+    global current_logged_in_user
+
+    if not current_logged_in_user:
+        messages.warning(request, 'Por favor, inicia sesión para acceder a los beneficios.')
+        return redirect('login') 
+        
+    comerciante = current_logged_in_user
+    
+    # --- SIMULACIÓN DE DATOS DE PUNTOS ---
+    puntos_siguiente_nivel = 6700 
+    comerciante.puntos = 5420
+    comerciante.nivel_actual = 'Artesano Oro'
+    puntos_actuales = comerciante.puntos
+    
+    puntos_restantes = puntos_siguiente_nivel - puntos_actuales
+    progreso_porcentaje = min(100, int((puntos_actuales / puntos_siguiente_nivel) * 100)) if puntos_siguiente_nivel > 0 else 100
+
+    # --- Lógica de Filtrado y Ordenamiento ---
+    
+    # Obtener parámetros de la URL
+    category_filter = request.GET.get('category', 'TODOS')
+    sort_by = request.GET.get('sort_by', '-fecha_creacion') 
+    
+    # 1. Obtener todos los beneficios
+    beneficios_queryset = Beneficio.objects.all()
+    
+    # 2. Aplicar filtro por categoría
+    if category_filter and category_filter != 'TODOS':
+        beneficios_queryset = beneficios_queryset.filter(categoria=category_filter)
+        
+    # 3. Aplicar ordenamiento
+    valid_sort_fields = ['vence', '-vence', 'puntos_requeridos', '-puntos_requeridos', '-fecha_creacion']
+    if sort_by in valid_sort_fields:
+        beneficios_queryset = beneficios_queryset.order_by(sort_by)
+    else:
+        sort_by = '-fecha_creacion'
+        beneficios_queryset = beneficios_queryset.order_by(sort_by)
+
+    # --- SIMULACIÓN DE CREACIÓN DE BENEFICIOS ---
+    try:
+        if not Beneficio.objects.exists():
+            # Nota: Los campos titulo, descripcion, vence, y categoria son obligatorios.
+            Beneficio.objects.create(titulo='Sorteo Mensual: Kit de Proveedores', descripcion='Participa y gana productos.', puntos_requeridos=100, vence=timezone.now().date() + timedelta(days=15), categoria='SORTEO')
+            Beneficio.objects.create(titulo='25% de Descuento en tu próximo pedido', descripcion='Aplica este descuento.', puntos_requeridos=500, vence=timezone.now().date() + timedelta(days=10), categoria='DESCUENTO')
+            Beneficio.objects.create(titulo='Capacitación en Marketing Digital', descripcion='Webinar gratuito.', puntos_requeridos=0, vence=timezone.now().date() + timedelta(days=5), categoria='CAPACITACION')
+    except Exception:
+        pass
+
+
+    context = {
+        'comerciante': comerciante,
+        'rol_usuario': ROLES.get('COMERCIANTE', 'Usuario'), 
+        'puntos_restantes': puntos_restantes,
+        'puntos_siguiente_nivel': puntos_siguiente_nivel,
+        'progreso_porcentaje': progreso_porcentaje,
+        'proximo_nivel': 'Platino',
+        'beneficios': beneficios_queryset,
+        'CATEGORIAS': CATEGORIAS, 
+        'current_category': category_filter, 
+        'current_sort': sort_by, 
+    }
+    
+    return render(request, 'usuarios/beneficios.html', context)
+
+
+# --- VISTAS DE DETALLE DE POST Y ACCIONES ---
 
 def post_detail_view(request, post_id):
-    """Muestra un post individual y su lista de comentarios (mantenida por si se usa, pero no es el destino principal)."""
     global current_logged_in_user
     
     if not current_logged_in_user:
         messages.warning(request, 'Debes iniciar sesión para ver los detalles.')
         return redirect('login') 
         
-    # Obtener post con conteos de likes y si el usuario actual ya dio like
     post = get_object_or_404(Post.objects.select_related('comerciante').annotate(
         comentarios_count=Count('comentarios', distinct=True),
         likes_count=Count('likes', distinct=True),
         is_liked=Count('likes', filter=Q(likes__comerciante=current_logged_in_user))
     ), pk=post_id)
         
-    # Obtener comentarios y seleccionar el comerciante autor para optimización
     comentarios = post.comentarios.select_related('comerciante').all().order_by('fecha_creacion')
     
     context = {
@@ -316,7 +383,6 @@ def post_detail_view(request, post_id):
 
 
 def add_comment_view(request, post_id):
-    """Maneja la lógica para añadir un comentario y redirige al foro principal."""
     global current_logged_in_user
     
     if not current_logged_in_user:
@@ -333,19 +399,15 @@ def add_comment_view(request, post_id):
             nuevo_comentario.comerciante = current_logged_in_user
             nuevo_comentario.save()
             messages.success(request, '¡Comentario publicado con éxito!')
-            # REDIRECCIÓN: Va a la plataforma principal
             return redirect('plataforma_comerciante') 
         else:
             messages.error(request, 'Error al publicar el comentario. Asegúrate de que el contenido no esté vacío.')
-            # REDIRECCIÓN: Va a la plataforma principal
             return redirect('plataforma_comerciante') 
             
-    # REDIRECCIÓN: Va a la plataforma principal
     return redirect('plataforma_comerciante')
 
 
 def like_post_view(request, post_id):
-    """Maneja la adición/eliminación de likes y redirige al foro principal."""
     global current_logged_in_user
 
     if not current_logged_in_user:
@@ -355,19 +417,15 @@ def like_post_view(request, post_id):
     post = get_object_or_404(Post, pk=post_id)
 
     if request.method == 'POST':
-        # Intenta obtener el Like. Si no existe, lo crea.
         like, created = Like.objects.get_or_create(
             post=post,
             comerciante=current_logged_in_user
         )
         
         if not created:
-            # Si ya existía, lo elimina (dislike)
             like.delete()
             messages.success(request, 'Dislike registrado.')
         else:
-            # Si se creó, es un nuevo like
             messages.success(request, '¡Like registrado!')
 
-    # REDIRECCIÓN: Va a la plataforma principal
     return redirect('plataforma_comerciante')

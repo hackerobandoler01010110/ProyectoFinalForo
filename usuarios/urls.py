@@ -1,4 +1,4 @@
-# usuarios/urls.py (CONTENIDO RESTAURADO)
+# usuarios/urls.py (CONTENIDO MODIFICADO)
 
 from django.urls import path
 from . import views
@@ -15,6 +15,9 @@ urlpatterns = [
     
     # PERFIL
     path('perfil/', views.perfil_view, name='perfil'),
+    
+    # BENEFICIOS (NUEVA RUTA)
+    path('beneficios/', views.beneficios_view, name='beneficios'),
     
     # RESTAURADO: Detalle del Post y Comentarios (Ver comentarios)
     path('post/<int:post_id>/', views.post_detail_view, name='post_detail'),
