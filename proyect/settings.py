@@ -9,6 +9,7 @@ from pathlib import Path
 import os
 import pymysql
 pymysql.install_as_MySQLdb()
+from django.contrib.messages import constants as messages
 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -36,7 +37,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'usuarios',
+    'usuarios.apps.UsuariosConfig',
+    'proveedor',
 ]
 
 MIDDLEWARE = [
@@ -134,4 +136,20 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 # Ruta de la imagen de perfil por defecto (debe existir en usuarios/static/img/)
 DEFAULT_PROFILE_IMAGE = 'usuarios/img/default_profile.png'
 
-#HOLA BORRRAME
+
+AUTHENTICATION_BACKENDS = [
+    'usuarios.backends.ComercianteBackend', # Nuestro backend personalizado
+    'django.contrib.auth.backends.ModelBackend', # Backend por defecto de Django
+]
+
+LOGIN_URL = '/login/'
+LOGIN_REDIRECT_URL = '/'
+
+MESSAGE_TAGS = {
+    messages.DEBUG: 'debug',
+    messages.INFO: 'info',
+    messages.SUCCESS: 'success',
+    messages.WARNING: 'warning',
+    messages.ERROR: 'error',
+}
+

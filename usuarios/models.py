@@ -84,11 +84,14 @@ NIVELES = [
 
 
 class Comerciante(models.Model):
-    # Campos de Autenticación y Contacto
+    # ----------------------------------------------------
+    # 1. CAMPOS DE AUTENTICACIÓN Y CONTACTO
+    # ----------------------------------------------------
     nombre_apellido = models.CharField(max_length=100)
     email = models.EmailField(unique=True)
-    password_hash = models.CharField(max_length=128) 
+    password_hash = models.CharField(max_length=128) # Almacena el hash de la contraseña
     
+    # Validador de WhatsApp
     whatsapp_validator = RegexValidator(
         regex=r'^\+569\d{8}$', 
         message="El formato debe ser '+569XXXXXXXX'."
@@ -101,17 +104,17 @@ class Comerciante(models.Model):
         help_text="Formato: +569XXXXXXXX"
     )
 
-    # Campos de Negocio
+    # ----------------------------------------------------
+    # 2. CAMPOS DE NEGOCIO Y UBICACIÓN
+    # ----------------------------------------------------
     relacion_negocio = models.CharField(max_length=10, choices=RELACION_NEGOCIO_CHOICES)
     tipo_negocio = models.CharField(max_length=20, choices=TIPO_NEGOCIO_CHOICES)
     comuna = models.CharField(max_length=50) 
     nombre_negocio = models.CharField(max_length=100, default='Mi Negocio Local', blank=True)
 
-    # Campos de Auditoría
-    fecha_registro = models.DateTimeField(auto_now_add=True)
-    ultima_conexion = models.DateTimeField(default=timezone.now)
-
-    # Campos de Perfil
+    # ----------------------------------------------------
+    # 3. CAMPOS DE PUNTOS Y PERFIL
+    # ----------------------------------------------------
     foto_perfil = models.ImageField(
         upload_to='perfiles/', 
         default='usuarios/img/default_profile.png', 
@@ -125,9 +128,56 @@ class Comerciante(models.Model):
         help_text="Códigos de intereses separados por coma."
     )
     
-    # --- CAMPOS DE PUNTOS ---
-    puntos = models.IntegerField(default=0, verbose_name='Puntos Acumulados') # Inicia en 0
+    puntos = models.IntegerField(default=0, verbose_name='Puntos Acumulados')
     nivel_actual = models.CharField(max_length=50, choices=NIVELES, default='BRONCE', verbose_name='Nivel de Beneficios')
+
+    # ----------------------------------------------------
+    # 4. CAMPOS DE AUDITORÍA Y SESIÓN (Corregidos)
+    # ----------------------------------------------------
+    fecha_registro = models.DateTimeField(auto_now_add=True)
+    
+    # Campo requerido por Django para el proceso de login (evita el ValueError)
+    last_login = models.DateTimeField(
+        blank=True, 
+        null=True, 
+        default=timezone.now
+    ) 
+    
+    # Tu campo de conexión personalizado (eliminar la duplicación y usar auto_now)
+    ultima_conexion = models.DateTimeField(auto_now=True)
+
+    # ====================================================
+    # 5. MÉTODOS Y PROPIEDADES DE AUTENTICACIÓN (Requeridos)
+    # ====================================================
+
+    @property
+    def is_authenticated(self):
+        """Requerido por request.user."""
+        return True
+
+    @property
+    def is_active(self):
+        """Requerido para verificación de estado."""
+        return True
+
+    @property
+    def is_anonymous(self):
+        """Requerido para distinguir de AnonymousUser."""
+        return False
+    
+    # Método requerido por Django Sessions para obtener el ID.
+    def get_username(self):
+        return self.email
+        
+    def get_full_name(self):
+        return self.nombre_apellido
+        
+    def get_short_name(self):
+        return self.email
+
+    # ====================================================
+    # 6. MÉTODOS ADICIONALES Y META
+    # ====================================================
 
     class Meta:
         verbose_name = 'Comerciante'
@@ -138,8 +188,9 @@ class Comerciante(models.Model):
 
     def get_profile_picture_url(self):
         DEFAULT_IMAGE_PATH = 'usuarios/img/default_profile.png'
-        if self.foto_perfil.name and self.foto_perfil.name != DEFAULT_IMAGE_PATH:
+        if self.foto_perfil and self.foto_perfil.name and self.foto_perfil.name != DEFAULT_IMAGE_PATH:
             return self.foto_perfil.url
+        # Usar la etiqueta 'static' para la imagen por defecto
         return static('img/default_profile.png')
 
 

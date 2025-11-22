@@ -87,6 +87,8 @@
                 </div>
             </header>
             
+
+
             <main class="flex-1 w-full max-w-screen-2xl mx-auto p-6 lg:p-8">
                 {% if messages %}
                     <div class="mb-6">
@@ -109,9 +111,13 @@
                                         <span class="material-symbols-outlined text-primary text-2xl">star</span>
                                         <p class="font-medium">Beneficios</p>
                                     </a>
-                                    <a class="flex items-center gap-4 px-4 py-3 rounded-lg hover:bg-primary/10 dark:hover:bg-primary/20 text-text-light dark:text-text-dark transition-colors duration-200" href="#">
-                                        <span class="material-symbols-outlined text-primary text-2xl">groups</span>
-                                        <p class="font-medium">Proveedores</p>
+
+                                    <a class="flex items-center gap-4 px-4 py-3 rounded-lg hover:bg-primary/10 dark:hover:bg-primary/20 text-text-light dark:text-text-dark transition-colors duration-200" 
+                                        href="{% url 'proveedores:directorio_proveedores' %}">
+                                            <span class="material-symbols-outlined text-primary text-2xl">groups</span>
+                                            <p class="font-medium">Proveedores</p>
+                                        </a>
+                                        
                                     </a>
                                     <a class="flex items-center gap-4 px-4 py-3 rounded-lg hover:bg-primary/10 dark:hover:bg-primary/20 text-text-light dark:text-text-dark transition-colors duration-200" href="#">
                                         <span class="material-symbols-outlined text-primary text-2xl">build</span>

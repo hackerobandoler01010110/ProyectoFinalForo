@@ -5,6 +5,7 @@ from django.contrib import messages
 from django.contrib.auth.hashers import make_password, check_password 
 from django.core.files.storage import default_storage 
 from django.utils import timezone
+from django.contrib.auth import login, logout, authenticate
 from django.db.models import Count, Q 
 from django.db import IntegrityError 
 from datetime import timedelta 
@@ -121,6 +122,7 @@ def registro_view(request):
     return render(request, 'usuarios/cuenta.html', context)
 
 
+# views.py
 def login_view(request):
     global current_logged_in_user
     
@@ -130,35 +132,35 @@ def login_view(request):
             email = form.cleaned_data['email']
             password = form.cleaned_data['password']
 
-            try:
-                comerciante = Comerciante.objects.get(email=email)
+            # 🚀 PASO CRÍTICO: Usar authenticate() que llama al ComercianteBackend
+            comerciante = authenticate(request, username=email, password=password) 
 
-                if check_password(password, comerciante.password_hash):
-                    # Actualizar nivel basado en puntos antes de iniciar sesión (asegurar consistencia)
-                    progreso = calcular_nivel_y_progreso(comerciante.puntos)
-                    comerciante.nivel_actual = progreso['nivel_codigo']
-                    
-                    comerciante.ultima_conexion = timezone.now()
-                    comerciante.save(update_fields=['ultima_conexion', 'nivel_actual']) # Guardar nivel actualizado
-                    
-                    current_logged_in_user = comerciante
-                    
-                    messages.success(request, f'¡Bienvenido {comerciante.nombre_apellido}!')
-                    return redirect('plataforma_comerciante')
-                else:
-                    messages.error(request, 'Contraseña incorrecta. Intenta nuevamente.')
-
-            except Comerciante.DoesNotExist:
-                messages.error(request, 'Este correo no está registrado. Por favor, regístrate primero.')
+            if comerciante is not None:
+                # 1. Iniciar Sesión de Django (sin last_login porque el backend lo maneja)
+                login(request, comerciante) 
+                
+                # 2. Tu lógica de negocio (mantén esto)
+                progreso = calcular_nivel_y_progreso(comerciante.puntos)
+                comerciante.nivel_actual = progreso['nivel_codigo']
+                comerciante.ultima_conexion = timezone.now() # Tu campo de conexión
+                comerciante.save(update_fields=['ultima_conexion', 'nivel_actual'])
+                current_logged_in_user = comerciante
+                
+                messages.success(request, f'¡Bienvenido {comerciante.nombre_apellido}!')
+                
+                # 3. Redirección
+                next_url = request.GET.get('next') 
+                return redirect(next_url if next_url else 'plataforma_comerciante')
+            else:
+                # El backend devolvió None (credenciales incorrectas)
+                messages.error(request, 'Correo o contraseña incorrectos. Intenta nuevamente.')
         else:
             messages.error(request, 'Por favor, completa todos los campos correctamente.')
     else:
         form = LoginForm()
         current_logged_in_user = None 
 
-    context = {
-        'form': form
-    }
+    context = {'form': form}
     return render(request, 'usuarios/cuenta.html', context)
 
 
